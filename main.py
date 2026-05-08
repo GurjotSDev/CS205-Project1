@@ -1,5 +1,6 @@
 import time
 import sys
+import heapq
 
 # This is to allow for simple changes to the puzzle, just make sure its valid
 trench_len = 10
@@ -124,3 +125,47 @@ def h_manhattan(state):
         distance = 1 + abs(trench_pos-goal_index)
 
         total_distance += distance
+    
+    return total_distance
+
+def general_search(problem, queuing_function):
+    nodes = [(0,0,make_node(problem, None, 0, 0))]
+    visited = {}
+    nodes_expanded = 0
+    max_queue_size = 1
+    tie_breaker = 0
+
+    while True:
+        if len(nodes)==0:
+            return "failure", nodes_expanded, max_queue_size
+
+        _, _, node = heapq.heappop(nodes)
+        state = node["State"]
+        g = node["Path_Cost"]
+
+        # Skip if we expanded this state at a cheaper cost
+        if visited.get(state, float("inf")) <= g:
+            continue
+
+        visited[state] = g
+        nodes_expanded += 1
+
+        h = queuing_function(state)
+        print(f"\nThe best state to expand with a g(n)  = {g} and h(n) = {h} is ...")
+        print(list(state[0]))
+        if any(v != 0 for v in state[1]):
+            print(f"Recess: {list(state[1])}")
+        
+        if state == goal_state:
+            return node, nodes_expanded, max_queue_size
+        
+        for child_state in operators(state):
+            child_g = g + 1
+            if visited.get(child_state, float("inf")) > child_g:
+                child_h = queuing_function(child_state)
+                tie_breaker += 1
+                child = make_node(child_state, node, node["Depth"] + 1, child_g)
+                heapq.heappush(nodes, (child_g + child_h, tie_breaker, child))
+        
+        if len(nodes) > max_queue_size:
+            max_queue_size = len(nodes)
