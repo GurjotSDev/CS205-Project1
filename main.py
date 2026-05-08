@@ -72,4 +72,55 @@ def operators(state):
             newrecess = list(recess)
             newrecess[i] = 0
             yield (tuple(newtrench), tuple(newrecess))
-                
+
+# Heuristics
+
+# For uniform cost search
+def h_zero(state):
+    return 0
+
+# For misplaced tiles
+def h_misplaced(state):
+    trench, recess = state
+    misplaced = 0
+
+    # Misplaced trench tiles
+    for i, v in enumerate(trench):
+        if v == 0:
+            continue
+
+        if goal_pos[v] != i:
+            misplaced += 1
+    
+    # Misplaced recess tiles
+    for v in recess:
+        if v != 0:
+            misplaced += 1
+    
+    return misplaced
+
+# For manhattan distance
+def h_manhattan(state):
+    trench, recess = state
+    total_distance = 0
+
+    # For the trench
+    for i,v in enumerate(trench):
+        if v == 0:
+            continue
+
+        goal_index = goal_pos[v]
+        distance = abs(i - goal_index)
+        total_distance += distance
+    
+    # For the recess
+    for i,v in enumerate(recess):
+        if v == 0:
+            continue
+
+        trench_pos = recess_pos[i]
+        goal_index = goal_pos[v]
+
+        distance = 1 + abs(trench_pos-goal_index)
+
+        total_distance += distance
