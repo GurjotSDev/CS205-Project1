@@ -169,3 +169,46 @@ def general_search(problem, queuing_function):
         
         if len(nodes) > max_queue_size:
             max_queue_size = len(nodes)
+
+def main():
+    print("Welcome to the Nine Men in a Trench Puzzle solver")
+    print("Type '1' to use the default puzzle or '2' to create your own")
+
+    choice = input().strip()
+
+    if choice == "1":
+        start = initial_state
+    elif choice == "2":
+        print ("do later")
+    else:
+        print("Invalid choice. Doing default")
+        start = initial_state
+    
+    print("\nSelect algorithm")
+    print("(1) for Uniform Cost Search")
+    print("(2) for Misplacd Tiles Heuristic")
+    print("(3) for Manhattan Distance Heuristic")
+    algorithm = input().strip()
+
+    if algorithm == "1":
+        heuristic = h_zero
+    elif algorithm == "2":
+        heuristic = h_misplaced
+    elif algorithm == "3":
+        heuristic = h_manhattan
+    else:
+        print("Invalid choice. Using uniform search cost")
+        heuristic = h_zero
+    
+    result, nodes_expanded, max_queue_size = general_search(start, heuristic)
+
+    if result == "failure":
+        print("\nFailure: no solution found")
+    else:
+        print("\nGoal state found")
+        print(f"Solution depth: {result["Depth"]}")
+        print(f"Number of nodes expanded: {nodes_expanded}")
+        print(f"Max queue size: {max_queue_size}")
+
+if __name__ == "__main__":
+    main()
