@@ -29,7 +29,7 @@ def make_node(state, parent, depth, path_cost):
         "Path_Cost": path_cost
     }
 
-# The opeerators of movement
+# The operators  of movement
 def operators(state):
     trench, recess = state
     # Find all the empty indexes
@@ -148,7 +148,7 @@ def general_search(problem, queuing_function):
         visited[state] = g
         nodes_expanded += 1
 
-        # Print the node bing expanded
+        # Print the node being expanded
         h = queuing_function(state)
         print(f"\nThe best state to expand with a g(n)  = {g} and h(n) = {h} is ...")
         print(list(state[0]))
