@@ -1,5 +1,4 @@
 import time
-import sys
 import heapq
 
 # This is to allow for simple changes to the puzzle, just make sure its valid
@@ -35,23 +34,17 @@ def operators(state):
     trench, recess = state
     # Find all the empty indexes
     for empty in (i for i,v in enumerate(trench) if v == 0):
-        # Move a soldier from the right of the empty spot to the empty spot
-        for j in range(empty+1, trench_len):
-            if trench[j] != 0:
-                if all(trench[k] == 0 for k in range (empty+1, j)):
-                    newtrench = list(trench)
-                    newtrench[empty], newtrench[j] = newtrench[j], 0
-                    yield (tuple(newtrench), recess)
-                break
+        # Move soldier from right to empty
+        if empty + 1 < trench_len and trench[empty+1] !=0:
+            newtrench = list(trench)
+            newtrench[empty], newtrench[empty+1] = newtrench[empty+1], 0
+            yield (tuple(newtrench), recess)
         
-        # Move a soldier from the left of the empty spot to the empty spot
-        for j in range(empty-1, -1, -1):
-            if trench[j] != 0:
-                if all(trench[k] == 0 for k in range (j+1, empty)):
-                    newtrench = list(trench)
-                    newtrench[empty], newtrench[j] = newtrench[j], 0
-                    yield (tuple(newtrench), recess)
-                break
+        # Move a soldier from the left to empty
+        if empty - 1 >= 0 and trench[empty-1] !=0:
+            newtrench = list(trench)
+            newtrench[empty], newtrench[empty-1] = newtrench[empty-1], 0
+            yield (tuple(newtrench), recess)
 
     # Move soldiers into the recess or into trench
     for i, v in enumerate(recess_pos):
@@ -100,7 +93,7 @@ def h_misplaced(state):
     
     return misplaced
 
-# For manhattan distance
+# For manhattan distance 
 def h_manhattan(state):
     trench, recess = state
     total_distance = 0
@@ -129,6 +122,7 @@ def h_manhattan(state):
     return total_distance
 
 def general_search(problem, queuing_function):
+    # Make the Queue
     nodes = [(0,0,make_node(problem, None, 0, 0))]
     visited = {}
     nodes_expanded = 0
@@ -136,36 +130,42 @@ def general_search(problem, queuing_function):
     tie_breaker = 0
 
     while True:
+        # Empty check
         if len(nodes)==0:
             return "failure", nodes_expanded, max_queue_size
 
+        # Get a node
         _, _, node = heapq.heappop(nodes)
         state = node["State"]
         g = node["Path_Cost"]
 
-        # Skip if we expanded this state at a cheaper cost
-        if visited.get(state, float("inf")) <= g:
-            continue
 
+        # Skip if we expanded this state at a cheaper cost
+        if state in visited and visited[state] <= g:
+            continue
+        
+        # Mark node visited
         visited[state] = g
         nodes_expanded += 1
 
+        # Print the node bing expanded
         h = queuing_function(state)
         print(f"\nThe best state to expand with a g(n)  = {g} and h(n) = {h} is ...")
         print(list(state[0]))
         if any(v != 0 for v in state[1]):
             print(f"Recess: {list(state[1])}")
         
+        # Goal state check
         if state == goal_state:
             return node, nodes_expanded, max_queue_size
         
+        # Insert children
         for child_state in operators(state):
             child_g = g + 1
-            if visited.get(child_state, float("inf")) > child_g:
-                child_h = queuing_function(child_state)
-                tie_breaker += 1
-                child = make_node(child_state, node, node["Depth"] + 1, child_g)
-                heapq.heappush(nodes, (child_g + child_h, tie_breaker, child))
+            child_h = queuing_function(child_state)
+            tie_breaker += 1
+            child = make_node(child_state, node, node["Depth"] + 1, child_g)
+            heapq.heappush(nodes, (child_g + child_h, tie_breaker, child))
         
         if len(nodes) > max_queue_size:
             max_queue_size = len(nodes)
@@ -179,14 +179,40 @@ def main():
     if choice == "1":
         start = initial_state
     elif choice == "2":
-        print ("do later")
+        global trench_len, goal_state, goal_pos
+        # Get trench length
+        print("\nHow many positions does the trench have?")
+        trench_len = int(input().strip())
+
+        # Get number of soldiers and positions
+        print("\nHow many soldiers are there?")
+        num_soldiers = int(input().strip())
+        print("Enter the soldier positions in the trench where 0 is empty and separate with space")
+        trench = tuple(int(x) for x in input().split())
+
+        # Get the number of recesses and indexes
+        print("\nHow many recesses are there?")
+        num_recesses = int(input().strip())
+        print("Enter the index the recess is on separated by space")
+        recess_pos = tuple(int(x) for x in input().split())
+        recess = tuple(0 for _ in recess_pos)
+
+        # Get goal state
+        soldiers = sorted(v for v in trench if v !=0)
+        goal_trench = tuple(soldiers) + tuple(0 for _ in range(trench_len-num_soldiers))
+        goal_state = (goal_trench, recess)
+        # Different from default because soldier count might be different
+        goal_pos = {v: i for i, v in enumerate(goal_trench) if v != 0}
+
+        start = (trench, recess)
+
     else:
         print("Invalid choice. Doing default")
         start = initial_state
     
     print("\nSelect algorithm")
     print("(1) for Uniform Cost Search")
-    print("(2) for Misplacd Tiles Heuristic")
+    print("(2) for Misplaced Tiles Heuristic")
     print("(3) for Manhattan Distance Heuristic")
     algorithm = input().strip()
 
@@ -200,15 +226,17 @@ def main():
         print("Invalid choice. Using uniform search cost")
         heuristic = h_zero
     
+    start_time = time.time()
     result, nodes_expanded, max_queue_size = general_search(start, heuristic)
-
+    end_time = time.time()
     if result == "failure":
         print("\nFailure: no solution found")
     else:
         print("\nGoal state found")
-        print(f"Solution depth: {result["Depth"]}")
+        print(f"Solution depth: {result['Depth']}")
         print(f"Number of nodes expanded: {nodes_expanded}")
         print(f"Max queue size: {max_queue_size}")
+        print(f"Time to solve: {end_time - start_time} seconds")
 
 if __name__ == "__main__":
     main()
